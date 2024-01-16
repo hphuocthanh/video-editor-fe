@@ -4,6 +4,7 @@ import { IconPhoto, IconVideo, IconTypography } from '@tabler/icons-react'
 import TextPanel from './components/TextPanel'
 import classes from './index.module.css'
 import Canvas from './components/Canvas'
+import Timeline from './components/Timeline'
 
 export default function Editor() {
 	const iconStyle = { width: rem(20), height: rem(20) }
@@ -61,7 +62,9 @@ export default function Editor() {
 				<div className="flex justify-center">
 					<Canvas />
 				</div>
-				<div>duration</div>
+				<div>
+					<Timeline />
+				</div>
 			</div>
 		</div>
 	)

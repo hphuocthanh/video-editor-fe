@@ -1,9 +1,14 @@
 import { create } from 'zustand'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import { fabric } from 'fabric'
-import { EditorElement, Placement, TextElement } from '../interfaces'
-import { getUID } from '../utils'
-import { produce } from 'immer'
+import {
+	EditorElement,
+	Placement,
+	TextElement,
+	TimeFrame,
+	VideoEditorElement,
+} from '../interfaces'
+import { getUID, isHtmlVideoElement } from '../utils'
 
 interface CanvasState {
 	canvas: fabric.Canvas | null
@@ -21,6 +26,27 @@ interface CanvasState {
 	activeElement: EditorElement | null
 	setActiveElement: (elm: EditorElement | null) => void
 	setActiveElementCanvas: (elm: EditorElement | null) => void
+
+	currentKeyFrame: number
+	fps: number
+	playing: boolean
+	setPlaying: (isPlayed: boolean) => void
+	startedTime: number
+	startedTimePlay: number
+	playFrames: () => void
+	setStartedTime: (time: number) => void
+	setStartedTimePlay: (time: number) => void
+	getCurrentTimeframe: () => number
+	setCurrentTimeInMs: (time: number) => void
+
+	updateVideoElements: () => void
+	updateAudioElements: () => void
+	updateEditorElementTimeFrame: (
+		editorElement: EditorElement,
+		timeFrame: Partial<TimeFrame>
+	) => void
+	handleSeek: (seek: number) => void
+	updateTimeTo: (newTime: number) => void
 }
 
 const useCanvasStore = create<CanvasState>()(
@@ -33,13 +59,13 @@ const useCanvasStore = create<CanvasState>()(
 			return set(() => ({ activeElement: elm }))
 		},
 		setActiveElementCanvas: (elm) => {
-			console.log('get called multiple times')
 			if (get()?.canvas) {
 				const canvas = get().canvas
 				if (elm?.fabricObject) canvas?.setActiveObject(elm.fabricObject)
 				else canvas?.discardActiveObject()
 			}
 		},
+
 		texts: [],
 		videos: [],
 		images: [],
@@ -240,7 +266,7 @@ const useCanvasStore = create<CanvasState>()(
 							objectCaching: false,
 							selectable: true,
 							lockUniScaling: true,
-							fill: '#ffffff',
+							fill: '#000000',
 						})
 						element.fabricObject = textObject
 						canvas.add(textObject)
@@ -291,6 +317,107 @@ const useCanvasStore = create<CanvasState>()(
 			// updateTimeTo(this.currentTimeInMs)
 			console.log('canvas', canvas)
 			canvas.renderAll()
+		},
+		updateVideoElements: () => {
+			const editorElements = get().elements
+			editorElements
+				.filter(
+					(element): element is VideoEditorElement => element.type === 'video'
+				)
+				.forEach((element) => {
+					const video = document.getElementById(element.properties.elementId)
+					if (isHtmlVideoElement(video)) {
+						const videoTime =
+							(get().getCurrentTimeframe() - element.timeFrame.start) / 1000
+						video.currentTime = videoTime
+						if (get().playing) {
+							video.play()
+						} else {
+							video.pause()
+						}
+					}
+				})
+		},
+		updateAudioElements: () => {},
+		currentKeyFrame: 0,
+		fps: 60,
+		playing: false,
+		startedTime: 0,
+		startedTimePlay: 0,
+		setPlaying: (isPlayed) => {
+			set(() => ({ playing: isPlayed }))
+			get().updateVideoElements()
+			get().updateAudioElements()
+			if (isPlayed) {
+				get().setStartedTime(Date.now())
+				get().setStartedTimePlay(get().getCurrentTimeframe())
+				requestAnimationFrame(() => {
+					get().playFrames()
+				})
+			}
+		},
+		setStartedTime: (time) => set(() => ({ startedTime: time })),
+		setStartedTimePlay: (time) => set(() => ({ startedTimePlay: time })),
+		playFrames: () => {
+			if (!get().playing) {
+				return
+			}
+			const elapsedTime = Date.now() - get().startedTime
+			const newTime = get().startedTimePlay + elapsedTime
+			get().updateTimeTo(newTime)
+			if (newTime > get().maxTime) {
+				get().setCurrentTimeInMs(0)
+				get().setPlaying(false)
+			} else {
+				requestAnimationFrame(() => {
+					get().playFrames()
+				})
+			}
+		},
+		getCurrentTimeframe: () => {
+			return (get().currentKeyFrame * 1000) / get().fps
+		},
+		setCurrentTimeInMs: (time: number) =>
+			set((state) => ({
+				currentKeyFrame: Math.floor((time / 1000) * state.fps),
+			})),
+		updateEditorElementTimeFrame: (
+			editorElement: EditorElement,
+			timeFrame: Partial<TimeFrame>
+		) => {
+			if (timeFrame.start != undefined && timeFrame.start < 0) {
+				timeFrame.start = 0
+			}
+			if (timeFrame.end != undefined && timeFrame.end > get().maxTime) {
+				timeFrame.end = get().maxTime
+			}
+			const newEditorElement = {
+				...editorElement,
+				timeFrame: {
+					...editorElement.timeFrame,
+					...timeFrame,
+				},
+			}
+			get().updateVideoElements()
+			get().updateAudioElements()
+			get().setElements(newEditorElement)
+		},
+		updateTimeTo: (newTime: number) => {
+			get().setCurrentTimeInMs(newTime)
+			get().elements.forEach((e) => {
+				if (!e.fabricObject) return
+				const isInside =
+					e.timeFrame.start <= newTime && newTime <= e.timeFrame.end
+				e.fabricObject.visible = isInside
+			})
+		},
+		handleSeek: (seek: number) => {
+			if (get().playing) {
+				get().setPlaying(false)
+			}
+			get().updateTimeTo(seek)
+			get().updateVideoElements()
+			get().updateAudioElements()
 		},
 	}))
 )

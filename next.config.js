@@ -6,7 +6,8 @@ const nextConfig = {
       canvas: 'commonjs canvas'
     })
     return config
-  }
+  },
+  reactStrictMode: false
 }
 
 module.exports = nextConfig
