@@ -5,9 +5,26 @@ import TextPanel from './components/TextPanel'
 import classes from './index.module.css'
 import Canvas from './components/Canvas'
 import Timeline from './components/Timeline'
+import ImagePanel from './components/ImagePanel'
+import { useEffect } from 'react'
+import useCanvasStore from '../store/canvas'
+import '../utils/extended_objects'
+import VideoPanel from './components/VideoPanel'
 
 export default function Editor() {
 	const iconStyle = { width: rem(20), height: rem(20) }
+	const { setActiveElement, setActiveElementCanvas } = useCanvasStore(
+		(store) => store
+	)
+	useEffect(() => {
+		useCanvasStore.subscribe(
+			(store) => store.elements,
+			(elements) => {
+				setActiveElement(elements[elements.length - 1])
+				setActiveElementCanvas(elements[elements.length - 1])
+			}
+		)
+	}, [setActiveElement, setActiveElementCanvas])
 
 	return (
 		<div className="flex justify-between w-full h-full min-h-screen py-8 px-4">
@@ -50,11 +67,11 @@ export default function Editor() {
 					</Tabs.Panel>
 
 					<Tabs.Panel value="image" w="100%">
-						Image content
+						<ImagePanel />
 					</Tabs.Panel>
 
 					<Tabs.Panel value="video" w="100%">
-						Video content
+						<VideoPanel />
 					</Tabs.Panel>
 				</Tabs>
 			</div>

@@ -7,20 +7,6 @@ import { useCallback, useEffect } from 'react'
 const TextPanel = () => {
 	const addText = useCanvasStore((store) => store.addText)
 	const refreshElements = useCanvasStore((store) => store.refreshElements)
-	const setActiveElement = useCanvasStore((store) => store.setActiveElement)
-	const setActiveElementCanvas = useCanvasStore(
-		(store) => store.setActiveElementCanvas
-	)
-
-	useEffect(() => {
-		useCanvasStore.subscribe(
-			(store) => store.elements,
-			(elements) => {
-				setActiveElement(elements[elements.length - 1])
-				setActiveElementCanvas(elements[elements.length - 1])
-			}
-		)
-	}, [setActiveElement, setActiveElementCanvas])
 
 	const handleAddText = useCallback(
 		(text: TextElement) => {

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { devtools, subscribeWithSelector } from 'zustand/middleware'
+import { subscribeWithSelector } from 'zustand/middleware'
 import { fabric } from 'fabric'
 import {
 	EditorElement,
@@ -8,7 +8,7 @@ import {
 	TimeFrame,
 	VideoEditorElement,
 } from '../interfaces'
-import { getUID, isHtmlVideoElement } from '../utils'
+import { getUID, isHtmlImageElement, isHtmlVideoElement } from '../utils'
 
 interface CanvasState {
 	canvas: fabric.Canvas | null
@@ -18,7 +18,9 @@ interface CanvasState {
 	images: string[]
 	addText: (text: TextElement) => void
 	addImage: (image: string) => void
+	addImageElement: (elm: HTMLImageElement | null, idx: number) => void
 	addVideo: (vid: string) => void
+	addVideoElement: (elm: HTMLVideoElement | null, idx: number) => void
 	elements: EditorElement[]
 	setElements: (els: EditorElement) => void
 	maxTime: number
@@ -100,7 +102,79 @@ const useCanvasStore = create<CanvasState>()(
 			})
 		},
 		addImage: (item) => set((state) => ({ images: [...state.images, item] })),
+		addImageElement: (imageElement, index) =>
+			set((state) => {
+				if (!isHtmlImageElement(imageElement)) {
+					return state
+				}
+				const aspectRatio =
+					imageElement.naturalWidth / imageElement.naturalHeight
+				const id = getUID()
+				const element: EditorElement = {
+					id,
+					name: `Media(image) ${index + 1}`,
+					type: 'image',
+					placement: {
+						x: 0,
+						y: 0,
+						width: 100 * aspectRatio,
+						height: 100,
+						rotation: 0,
+						scaleX: 1,
+						scaleY: 1,
+					},
+					timeFrame: {
+						start: 0,
+						end: get().maxTime,
+					},
+					properties: {
+						elementId: `image-${index}`,
+						src: imageElement.src,
+						effect: {
+							type: 'none',
+						},
+					},
+				}
+
+				return { elements: [...state.elements, element] }
+			}),
 		addVideo: (item) => set((state) => ({ videos: [...state.videos, item] })),
+		addVideoElement: (element, index) =>
+			set((state) => {
+				if (!isHtmlVideoElement(element)) {
+					return state
+				}
+				const videoDurationMs = element.duration * 1000
+				const aspectRatio = element.videoWidth / element.videoHeight
+				const id = getUID()
+				const newElm: EditorElement = {
+					id,
+					name: `Media(video) ${index + 1}`,
+					type: 'video',
+					placement: {
+						x: 0,
+						y: 0,
+						width: 100 * aspectRatio,
+						height: 100,
+						rotation: 0,
+						scaleX: 1,
+						scaleY: 1,
+					},
+					timeFrame: {
+						start: 0,
+						end: videoDurationMs,
+					},
+					properties: {
+						elementId: `video-${index}`,
+						src: element.src,
+						effect: {
+							type: 'none',
+						},
+					},
+				}
+
+				return { elements: [...state.elements, newElm] }
+			}),
 		elements: [],
 		setElements: (item) =>
 			set((state) => ({
@@ -110,12 +184,13 @@ const useCanvasStore = create<CanvasState>()(
 			})),
 		refreshElements: () => {
 			const state = get()
-			console.log('refreshed get called multiple times')
+			console.log(state.elements)
 			if (!state.canvas) return
 			const canvas = state.canvas
 			canvas.remove(...canvas.getObjects())
 			for (let index = 0; index < state.elements.length; index++) {
 				const element = state.elements[index]
+
 				switch (element.type) {
 					case 'video': {
 						console.log('elementid', element.properties.elementId)
@@ -126,7 +201,7 @@ const useCanvasStore = create<CanvasState>()(
 						) as HTMLVideoElement | null
 						// if (!isHtmlVideoElement(videoElement)) continue
 						if (!videoElement) continue
-						const videoObject = new fabric.Image(videoElement, {
+						const videoObject = new fabric.CoverVideo(videoElement, {
 							name: element.id,
 							left: element.placement.x,
 							top: element.placement.y,
@@ -179,18 +254,19 @@ const useCanvasStore = create<CanvasState>()(
 						break
 					}
 					case 'image': {
+						console.log(
+							'element.properties.elementId',
+							element.properties.elementId,
+							document.getElementById(element.properties.elementId)
+						)
 						if (document.getElementById(element.properties.elementId) == null)
 							continue
 						const imageElement = document.getElementById(
 							element.properties.elementId
 						) as HTMLImageElement | null
-						// if (!isHtmlImageElement(imageElement)) continue
-						// const filters = [];
-						// if (element.properties.effect?.type === "blackAndWhite") {
-						//   filters.push(new fabric.Image.filters.Grayscale());
-						// }
-						if (!imageElement) continue
-						const imageObject = new fabric.Image(imageElement, {
+						if (!isHtmlImageElement(imageElement)) continue
+
+						const imageObject = new fabric.CoverImage(imageElement, {
 							name: element.id,
 							left: element.placement.x,
 							top: element.placement.y,
@@ -315,7 +391,6 @@ const useCanvasStore = create<CanvasState>()(
 			}
 			// refreshAnimations()
 			// updateTimeTo(this.currentTimeInMs)
-			console.log('canvas', canvas)
 			canvas.renderAll()
 		},
 		updateVideoElements: () => {
