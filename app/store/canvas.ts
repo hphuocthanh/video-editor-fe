@@ -502,22 +502,22 @@ const useCanvasStore = create<CanvasState>()(
 		saveVideo: () => {
 			const canvas = document.getElementById('canvas') as HTMLCanvasElement
 			const stream = canvas.captureStream(30)
-			const audioElements = get().elements.filter((e) => e.type === 'audio')
-			const audioStreams: MediaStream[] = []
-			audioElements.forEach((audio) => {
-				const audioElement = document.getElementById(
-					audio.properties.elementId
-				) as HTMLAudioElement
-				let ctx = new AudioContext()
-				let sourceNode = ctx.createMediaElementSource(audioElement)
-				let dest = ctx.createMediaStreamDestination()
-				sourceNode.connect(dest)
-				sourceNode.connect(ctx.destination)
-				audioStreams.push(dest.stream)
-			})
-			audioStreams.forEach((audioStream) => {
-				stream.addTrack(audioStream.getAudioTracks()[0])
-			})
+			// const audioElements = get().elements.filter((e) => e.type === 'audio')
+			// const audioStreams: MediaStream[] = []
+			// audioElements.forEach((audio) => {
+			// 	const audioElement = document.getElementById(
+			// 		audio.properties.elementId
+			// 	) as HTMLAudioElement
+			// 	let ctx = new AudioContext()
+			// 	let sourceNode = ctx.createMediaElementSource(audioElement)
+			// 	let dest = ctx.createMediaStreamDestination()
+			// 	sourceNode.connect(dest)
+			// 	sourceNode.connect(ctx.destination)
+			// 	audioStreams.push(dest.stream)
+			// })
+			// audioStreams.forEach((audioStream) => {
+			// 	stream.addTrack(audioStream.getAudioTracks()[0])
+			// })
 			const video = document.createElement('video')
 			video.srcObject = stream
 			video.height = VIDEO_DIM.HEIGHT
