@@ -1,6 +1,11 @@
 'use client'
 import { Flex, Tabs, Text, rem } from '@mantine/core'
-import { IconPhoto, IconVideo, IconTypography } from '@tabler/icons-react'
+import {
+	IconPhoto,
+	IconVideo,
+	IconTypography,
+	IconFileExport,
+} from '@tabler/icons-react'
 import TextPanel from './components/TextPanel'
 import classes from './index.module.css'
 import Canvas from './components/Canvas'
@@ -10,6 +15,7 @@ import { useEffect } from 'react'
 import useCanvasStore from '../store/canvas'
 import '../utils/extended_objects'
 import VideoPanel from './components/VideoPanel'
+import ExportVideo from './components/Export'
 
 export default function Editor() {
 	const iconStyle = { width: rem(20), height: rem(20) }
@@ -60,6 +66,12 @@ export default function Editor() {
 								<Text>Video</Text>
 							</Flex>
 						</Tabs.Tab>
+						<Tabs.Tab value="export">
+							<Flex direction="column" align="center" justify={'center'}>
+								<IconFileExport style={iconStyle} />
+								<Text>Export</Text>
+							</Flex>
+						</Tabs.Tab>
 					</Tabs.List>
 
 					<Tabs.Panel value="text" w="100%">
@@ -72,6 +84,10 @@ export default function Editor() {
 
 					<Tabs.Panel value="video" w="100%">
 						<VideoPanel />
+					</Tabs.Panel>
+
+					<Tabs.Panel value="export" w="100%">
+						<ExportVideo />
 					</Tabs.Panel>
 				</Tabs>
 			</div>
