@@ -14,6 +14,7 @@
     "@mantine/core": "^7.4.1",
     "@mantine/hooks": "^7.4.1",
     "@tabler/icons-react": "^2.46.0",
+    "canvas": "^2.11.2",
     "fabric": "^5.3.0",
     "immer": "^10.0.3",
     "next": "14.0.4",
