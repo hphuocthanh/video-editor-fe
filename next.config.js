@@ -1,10 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   webpack: config => {
-    config.externals.push({
-      sharp: 'commonjs sharp',
-      canvas: 'commonjs canvas'
-    })
+    config.externals = [...config.externals, 'canvas', 'jsdom']
     return config
   },
   reactStrictMode: false
